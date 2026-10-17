@@ -4,7 +4,7 @@
 
 - `npm run build`: TypeScript project build and Vite production compilation passed.
 - `npm run lint`: Oxlint passed without warnings.
-- `npm test`: seven server pricing/validation tests passed. They cover submitted-price tampering,
+- `npm test`: eight server pricing/validation tests passed. They cover submitted-price tampering,
   invalid quantities, unapproved products, invalid colours, server-priced lithophane options,
   cross-customer photo paths, stencil bounds, and bag limits.
 - `npm run test:e2e`: 20 Chromium tests passed. They exercise bee entrance and pointer following,

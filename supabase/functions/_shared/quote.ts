@@ -24,13 +24,16 @@ export function calculateQuote(input: unknown, catalog: ProductRow[], userId: st
         const edge = m.size * .72
         if (m.x < edge + 7 || m.x > 1493 - edge || m.y < edge + 7 || m.y > 293 - edge) throw Error('A stencil motif is outside the 15 × 3 cm design area.')
       }
-    } else if (!Number.isInteger(raw.color) || Number(raw.color) < 0 || Number(raw.color) > 2) throw Error('Invalid colour.')
+    } else {
+      if (!['heart-keychain','capsule-keychain','flower-keychain','hex-keychain','ribbed-planter','phone-stand'].includes(id)) throw Error('Invalid product identifier.')
+      if (!Number.isInteger(raw.color) || Number(raw.color) < 0 || Number(raw.color) > 2) throw Error('Invalid colour.')
+    }
     const product = lookup.get(id)
     if (!product?.active || !product.approved) throw Error('This product is awaiting workshop approval and cannot be purchased yet.')
     const unitCents = Math.round(Number(product.price_qar) * 100) + extra
     if (!Number.isFinite(unitCents) || unitCents <= 0) throw Error('Invalid catalogue price.')
     cents += unitCents * raw.quantity
-    return { productId: raw.productId, name: product.name, quantity: raw.quantity, unitPrice: unitCents / 100, color: raw.color, config, photoPath: raw.photoPath }
+    return { productId: raw.productId, name: product.name, quantity: raw.quantity, unitPrice: unitCents / 100, color: raw.color, config, photoPath: raw.productId === 'lithophane' ? raw.photoPath : undefined }
   })
   if (cents > 1000000) throw Error('This order needs a workshop quote.')
   return { total: cents / 100, items }

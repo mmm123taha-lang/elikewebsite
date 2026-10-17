@@ -36,3 +36,7 @@ test('accepts valid henna geometry but rejects unsupported or out-of-bounds moti
 test('rejects empty bags and unbounded design counts',()=>{
  assert.throws(()=>calculateQuote([],products,user));assert.throws(()=>calculateQuote(Array(31).fill({productId:'heart-keychain',quantity:1,color:0}),products,user))
 })
+
+test('internal lithophane price IDs and add-ons cannot bypass custom-photo validation',()=>{
+ for(const productId of ['lithophane-small','led-base']) assert.throws(()=>calculateQuote([{productId,quantity:1,color:0}],products,user),/product identifier/)
+})
