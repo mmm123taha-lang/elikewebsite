@@ -1,0 +1,10 @@
+project_id = "elike-shop"
+
+# JWTs are verified with auth.getUser() inside each function. This also supports
+# the current Supabase publishable-key format rather than relying on legacy JWT keys.
+[functions.create-checkout]
+verify_jwt = false
+[functions.verify-payment]
+verify_jwt = false
+[functions.reconcile-payments]
+verify_jwt = false

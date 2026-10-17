@@ -1,36 +1,58 @@
-# ELIKE validation
+# ELIKE shop validation
 
-Text and control boundary pairs used by the landing page. Artwork, object illustrations, and decorative rules are not text or control boundaries.
+## Executed
 
-| Pair | Ratio | Use | Result |
-| --- | ---: | --- | --- |
-| Ink / canvas | 17.42:1 | text | Pass |
-| Muted / canvas | 5.80:1 | text | Pass |
-| Ink / gold | 9.80:1 | text | Pass |
-| Ink / gold hover | 8.64:1 | text | Pass |
-| Canvas / ink | 17.42:1 | text | Pass |
-| Secondary / ink | 9.78:1 | text | Pass |
-| Gold text / canvas | 6.01:1 | text | Pass |
-| Gold text / soft | 5.60:1 | text | Pass |
-| Gold text / gold | 3.38:1 | UI border | Pass |
-| Control border / canvas | 3.56:1 | UI border | Pass |
-| Card arrow border / ink | 6.03:1 | UI border | Pass |
-| Decorative line / canvas | 1.37:1 | decoration | Exempt: decorative |
-| Decorative divider / ink | 2.74:1 | decoration | Exempt: decorative |
-| Gold / canvas | 1.78:1 | decoration | Exempt: decorative |
+- `npm run build`: TypeScript project build and Vite production compilation passed.
+- `npm run lint`: Oxlint passed without warnings.
+- `npm test`: seven server pricing/validation tests passed. They cover submitted-price tampering,
+  invalid quantities, unapproved products, invalid colours, server-priced lithophane options,
+  cross-customer photo paths, stencil bounds, and bag limits.
+- `npm run test:e2e`: 19 Chromium tests passed. They exercise bee entrance and pointer following,
+  six products and colour picture selection, QAR 15 keychains, cart quantities/totals/reload,
+  motif placement/size/duplication/undo/keyboard movement/persistence, custom cart thumbnails,
+  nine-second video metadata/skip/automatic advance, upload/light toggle/size/base/shape pricing/photo persistence,
+  honest unconnected-service states, and reduced motion.
+- Responsive browser checks cover all eight hash routes at 360, 390, 430, 768, 1024,
+  and 1440 px in English and Arabic. No document overflow or browser errors occurred.
+- `deno check` passed for create-checkout, verify-payment, and reconcile-payments functions.
+- FFprobe confirms the supplied MP4 duration is exactly 9.000 seconds.
 
-## Checks performed
+Tests live in tests/browser and tests/quote.test.ts. Browser tests currently expect services
+to be unconfigured; run them with the default local environment, not merchant credentials.
 
-- `npm run build`: passed (TypeScript project build and Vite production compilation).
-- `npm run lint`: passed (repository-configured Oxlint).
-- Chromium browser: 360, 390, 430, 768, 1024, and 1440 px, in English and Arabic, with normal and reduced motion (24 combinations).
-- No horizontal document overflow; all brand images loaded; no browser runtime errors.
-- All 72 card/preview flows passed, including Escape dismissal and visible preview content.
-- Mobile visible buttons and links were at least 44 px tall.
-- Reduced-motion entrances remained visible and the ambient lamp animation was disabled.
-- Language switch, RTL direction, persistence after reload, native dialog keyboard focus containment, and close button passed.
-- Visually reviewed desktop, mobile English, and mobile Arabic screenshots.
+## Scope limits
 
-Decorative lines and the gold mark/underline fall below UI contrast thresholds but do not convey text or interactive boundaries. All introduced text pairs pass 4.5:1; control boundaries pass 3:1. The supplied brand artwork retains its original colors, with derived reverse, flat, and ink variants.
+Supabase is not provisioned, the migration/RLS policies have not been run in a Supabase
+project, email delivery is not tested, and the owner has not selected a payment provider.
+The candidate MyFatoorah adapter has not performed a sandbox or live transaction. It must
+be reviewed against the selected merchant account, sandbox-tested, and accepted before
+both checkout flags are enabled. The frontend visibly prevents real ordering meanwhile.
 
-The original brief's Next.js pages, ESLint configuration, 31 geometry tests, database reset, customer logins, checkout and STL privacy checks do not exist in this Vite repository. They were not run and are outside the approved landing-page scope. No backend behavior is claimed.
+Lithophane previews simulate transmitted light; they do not generate a fabrication mesh.
+Henna designs require workshop cut/bridge review. Product renders illustrate the sample
+catalogue. Keychain prices are QAR 15 as instructed; other prices are proposed.
+
+## Text contrast
+
+All introduced text pairs were computed against their backgrounds. Decorative artwork,
+illustrated products, background rules and disabled controls are not body text.
+
+| Pair | Contrast | Result |
+| --- | ---: | --- |
+| Ink / canvas | 17.42:1 | Pass |
+| Muted / canvas | 5.80:1 | Pass |
+| Ink / gold | 9.80:1 | Pass |
+| Gold text / soft | 5.60:1 | Pass |
+| Gold text / canvas | 6.01:1 | Pass |
+| Light text / ink | 17.42:1 | Pass |
+| Secondary / ink | 9.78:1 | Pass |
+| Muted / panel | 5.23:1 | Pass |
+| Henna / strip | 10.19:1 | Pass |
+| Henna help / strip | 5.25:1 | Pass |
+| Error / error panel | 6.78:1 | Pass |
+| Success / success panel | 7.61:1 | Pass |
+| Gold / toast | 9.80:1 | Pass |
+| Ink / rose | 5.94:1 | Pass |
+| Ink / sage | 5.85:1 | Pass |
+
+Gold on canvas is 1.78:1 and is used only for decorative artwork, not text. Decorative dividers are likewise exempt from text/control contrast thresholds.

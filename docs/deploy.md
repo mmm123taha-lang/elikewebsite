@@ -1,6 +1,6 @@
 # Deploy ELIKE with GitHub Pages
 
-The site is a static Vite build. No server, database, or application secrets are required.
+The frontend is a static Vite build. Browsing, designing and the saved cart work without a backend. Real accounts, orders and payments need the separate Supabase setup in backend-setup.md.
 Relative asset paths support both the project URL and root/custom-domain hosting.
 
 ## One-time GitHub setting
@@ -31,5 +31,4 @@ npm run build
 npm run preview
 ```
 
-The public website contains informational previews. Ordering, design uploads,
-payments, and admin features are not implemented.
+The public website includes the store, henna designer, lithophane previews and saved cart. Accounts and paid orders remain disabled until the backend, merchant provider and approved catalogue are connected.

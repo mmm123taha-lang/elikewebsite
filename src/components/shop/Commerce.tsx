@@ -1,0 +1,91 @@
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import type { Session } from '@supabase/supabase-js'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, ShieldCheck, Mail, LogOut, Package, LoaderCircle } from 'lucide-react'
+import { colors, money } from '@/lib/catalog'
+import type { CartItem, Language } from '@/lib/catalog'
+import { backend, checkoutEnabled } from '@/lib/backend'
+import { getAsset, readSaved, save } from '@/lib/persistence'
+import { ProductImage } from './ProductImage'
+export function Cart({ lang, items, change }: { lang: Language; items: CartItem[]; change: (id: string, quantity: number) => void }) {
+  const ar = lang === 'ar', reduced = useReducedMotion()
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  return <section className="shop-page wrap"><div className="page-heading"><p className="eyebrow">{ar ? 'أشياء صغيرة، اختيرت بعناية' : 'LITTLE THINGS, THOUGHTFULLY CHOSEN'}</p><h1>{ar ? 'حقيبتك.' : 'Your little collection.'}</h1><p>{ar ? 'محفوظة في هذا المتصفح حتى تكون جاهزاً.' : 'Saved in this browser, for when you’re ready.'}</p></div>
+    {!items.length ? <div className="empty-state"><ShoppingBag size={45} strokeWidth={1} /><h2>{ar ? 'تبدأ كل مجموعة بشيء صغير.' : 'Good things start with a little something.'}</h2><a className="primary-button" href="#store">{ar ? 'اكتشف المتجر' : 'Find your little favourite'}<ArrowRight size={17} /></a></div> : <div className="cart-layout"><div className="cart-items"><AnimatePresence initial={false}>{items.map(item => <motion.article layout key={item.id} initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={reduced ? { opacity: 1 } : { opacity: 0, x: 25 }} className="cart-item">
+      <div className="cart-thumbnail">{item.column !== undefined ? <ProductImage column={item.column} color={item.color ?? 0} name={ar ? item.ar : item.name} /> : <img src={item.thumbnail} alt={ar ? item.ar : item.name} />}</div><div className="cart-item-info"><h2>{ar ? item.ar : item.name}</h2><p>{item.color !== undefined ? (ar ? colors[item.color].ar : colors[item.color].name) : String(item.config?.dimensions ?? '')}</p><p>{money(item.price, lang)} {ar ? 'للقطعة' : 'each'}</p><div className="quantity-control"><button aria-label={`${ar ? 'تقليل كمية' : 'Decrease quantity of'} ${item.name}`} disabled={item.quantity === 1} onClick={() => change(item.id, item.quantity - 1)}><Minus size={14} /></button><span aria-label={ar ? 'الكمية' : 'Quantity'}>{item.quantity}</span><button aria-label={`${ar ? 'زيادة كمية' : 'Increase quantity of'} ${item.name}`} disabled={item.quantity >= 20} onClick={() => change(item.id, item.quantity + 1)}><Plus size={14} /></button></div></div><div className="cart-line-end"><strong>{money(item.price * item.quantity, lang)}</strong><button className="icon-button" aria-label={`${ar ? 'حذف' : 'Remove'} ${item.name}`} onClick={() => change(item.id, 0)}><Trash2 size={17} /></button></div>
+    </motion.article>)}</AnimatePresence></div><aside className="order-summary"><p className="eyebrow">{ar ? 'ملخص الحقيبة' : 'YOUR BAG, AT A GLANCE'}</p><div className="summary-line"><span>{ar ? 'القطع' : 'Pieces'}</span><span>{items.reduce((n, item) => n + item.quantity, 0)}</span></div><div className="summary-line total-line"><span>{ar ? 'المجموع التقديري' : 'Estimated total'}</span><motion.strong key={total} initial={reduced ? false : { opacity: .5, y: 4 }} animate={{ opacity: 1, y: 0 }}>{money(total, lang)}</motion.strong></div><p className="fine-print">{ar ? 'الميداليات ١٥ ر.ق. بقية الأسعار مقترحة لحين اعتمادها.' : 'Keychains are QAR 15. Other prices are proposed and awaiting approval.'}</p><a className="primary-button full-width" href="#checkout">{ar ? 'متابعة لإتمام الطلب' : 'Continue to checkout'}<ArrowRight size={17} /></a><a className="text-button" href="#store">{ar ? 'تابع التسوق' : 'Keep exploring'}</a></aside></div>}
+  </section>
+}
+export function Account({ lang, session }: { lang: Language; session: Session | null }) {
+  const ar = lang === 'ar'
+  const [email, setEmail] = useState(''), [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState(false)
+  async function submit(event: FormEvent) {
+    event.preventDefault(); setError(false); setMessage('')
+    if (!backend) { setError(true); setMessage(ar ? 'تسجيل الدخول غير متاح بعد. يجري ربط خدمة الحسابات.' : 'Sign-in is not available yet. The account service is being connected.'); return }
+    setBusy(true)
+    try {
+      const { error } = await backend.auth.signInWithOtp({ email, options: { emailRedirectTo: `${location.origin}${location.pathname}?view=account` } })
+      if (error) throw error
+      setMessage(ar ? 'تفقد بريدك الإلكتروني واضغط رابط الدخول الآمن. قد يستغرق وصوله دقيقة.' : 'Check your email for your secure sign-in link. It may take a minute to arrive.')
+    } catch { setError(true); setMessage(ar ? 'تعذّر إرسال رابط الدخول. تحقق من بريدك وحاول مجدداً.' : 'Could not send a sign-in link. Check your email address and try again.') } finally { setBusy(false) }
+  }
+  return <section className="shop-page wrap account-page"><div className="account-art"><img src={`${import.meta.env.BASE_URL}brand/elike-bee.svg`} alt="" /><p>{ar ? 'مكان صغير لأفكارك الكبيرة.' : 'A little home for your big ideas.'}</p></div><div className="account-form"><p className="eyebrow">{ar ? 'أهلاً بك في إيلايك' : 'A LITTLE MORE PERSONAL'}</p><h1>{session ? (ar ? 'أهلاً بعودتك.' : 'Welcome back.') : (ar ? 'أهلاً بك.' : 'Make yourself at home.')}</h1>{session ? <><p>{session.user.email}</p><a className="primary-button" href="#orders"><Package size={18} />{ar ? 'طلباتي' : 'Your orders'}</a><button className="text-button" onClick={async () => { await backend?.auth.signOut() }}><LogOut size={16} />{ar ? 'تسجيل الخروج' : 'Sign out'}</button></> : <><p>{ar ? 'رابط آمن إلى بريدك. دون كلمة مرور.' : 'One secure link to your inbox. No password to remember.'}</p>{!backend && <p className="connection-notice">{ar ? 'خدمة الحسابات قيد الربط. لا يتم إنشاء حساب تجريبي أو حفظ كلمة مرور.' : 'Account service is being connected. Sign-in is not active yet.'}</p>}<form onSubmit={submit}><label>{ar ? 'البريد الإلكتروني' : 'Email address'}<input type="email" required autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} /></label><button className="primary-button full-width" disabled={busy || !backend}>{busy ? <LoaderCircle className="spin" size={18} /> : <Mail size={18} />}{ar ? 'أرسل رابط الدخول' : 'Send my sign-in link'}</button></form><p className="fine-print">{ar ? 'استخدم الرابط نفسه لإنشاء حساب أو الدخول لحسابك. لن نطلب تفاصيل بطاقتك هنا.' : 'New here? Your first sign-in creates your account. We never ask for card details on this page.'}</p></>}{message && <p className={`form-message ${error ? 'error' : ''}`} role="status">{message}</p>}</div></section>
+}
+export function Checkout({ lang, items, session }: { lang: Language; items: CartItem[]; session: Session | null }) {
+  const ar = lang === 'ar'
+  const [name, setName] = useState(''), [phone, setPhone] = useState(''), [consent, setConsent] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('')
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  async function pay(event: FormEvent) {
+    event.preventDefault(); setError('')
+    if (!backend || !checkoutEnabled || !session) return
+    setBusy(true)
+    try {
+      const lines = []
+      for (const item of items) {
+        let photoPath: string | undefined
+        if (item.assetId) {
+          const blob = await getAsset(item.assetId)
+          if (!blob) throw new Error(ar ? 'إحدى الصور غير موجودة. أعد رفعها قبل إتمام الطلب.' : 'A saved photo is missing. Please upload it again before checking out.')
+          photoPath = `${session.user.id}/${item.assetId}.jpg`
+          const uploaded = await backend.storage.from('customer-designs').upload(photoPath, blob, { contentType: 'image/jpeg', upsert: false })
+          if (uploaded.error && !['409', 'Duplicate'].includes(String(uploaded.error.statusCode))) throw new Error(ar ? 'تعذّر رفع الصورة بشكل آمن. حاول مجدداً.' : 'Your photo could not be uploaded securely. Please try again.')
+        }
+        lines.push({ productId: item.productId, quantity: item.quantity, color: item.color, config: item.config, photoPath })
+      }
+      const fingerprint = JSON.stringify({ lines, name: name.trim(), phone: phone.trim() })
+      const previous = readSaved<{ fingerprint: string; requestId: string } | null>('elike-checkout-attempt', null)
+      const requestId = previous?.fingerprint === fingerprint ? previous.requestId : crypto.randomUUID()
+      save('elike-checkout-attempt', { fingerprint, requestId })
+      const result = await backend.functions.invoke('create-checkout', { body: { requestId, expectedTotal: total, items: lines, customer: { name: name.trim(), phone: phone.trim() }, fulfilment: 'pickup' } })
+      if (result.error || !result.data?.url) throw new Error(ar ? 'الدفع غير متاح حالياً. لم يتم تأكيد أي طلب. حاول لاحقاً.' : 'Checkout is unavailable right now. No order has been confirmed. Please try again later.')
+      const destination = new URL(result.data.url)
+      if (destination.protocol !== 'https:') throw new Error('Invalid payment link')
+      window.location.assign(destination.href)
+    } catch (e) { setError(e instanceof Error ? e.message : 'Checkout could not be started.') } finally { setBusy(false) }
+  }
+  return <section className="shop-page wrap"><div className="page-heading"><p className="eyebrow">{ar ? 'اللمسات الأخيرة' : 'THE FINAL LITTLE DETAILS'}</p><h1>{ar ? 'إتمام الطلب.' : 'Let’s make it yours.'}</h1></div>{!items.length ? <div className="empty-state"><p>{ar ? 'حقيبتك فارغة.' : 'Your bag is waiting for a little something.'}</p><a className="primary-button" href="#store">{ar ? 'إلى المتجر' : 'Explore the store'}</a></div> : <div className="cart-layout"><div className="checkout-form">{(!backend || !checkoutEnabled) && <div className="connection-notice"><strong>{ar ? 'الطلبات المدفوعة غير متاحة بعد.' : 'Online ordering is not open yet.'}</strong><p>{ar ? 'يجري ربط الحسابات وخدمة الدفع. حقيبتك محفوظة؛ لم يتم إرسال طلب أو خصم أي مبلغ.' : 'Accounts and hosted payments are being connected. Your bag is saved; no order has been submitted and no payment has been taken.'}</p></div>}{!session && <div className="checkout-signin"><Mail size={22} /><div><h2>{ar ? 'حسابك أولاً' : 'A home for your order'}</h2><p>{ar ? 'سجّل الدخول لتتبع طلبك وحفظ تصاميمك بأمان.' : 'Sign in to keep your order and designs safely in one place.'}</p><a className="text-button" href="#account">{ar ? 'تسجيل الدخول' : 'Sign in or create an account'}<ArrowRight size={15} /></a></div></div>}
+      <form onSubmit={pay}><h2>{ar ? 'تفاصيل الاستلام' : 'Pickup details'}</h2><label>{ar ? 'الاسم الكامل' : 'Full name'}<input required maxLength={100} autoComplete="name" value={name} onChange={e => setName(e.target.value)} /></label><label>{ar ? 'رقم الهاتف في قطر' : 'Qatar phone number'}<input type="tel" required autoComplete="tel" placeholder="+974 1234 5678" pattern="(?:\+974[\s\-]*)?(?:[0-9][\s\-]*){8}" maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} /></label><div className="pickup-note"><Package size={20} /><p>{ar ? 'استلام من الورشة في قطر. يتحدد الوقت والموقع بعد قبول الطلب؛ لا توجد رسوم توصيل في هذه المعاينة.' : 'Workshop pickup in Qatar. Pickup time and location are arranged after order acceptance. This preview does not include delivery.'}</p></div><label className="checkbox-option"><input type="checkbox" required checked={consent} onChange={e => setConsent(e.target.checked)} /><span>{ar ? 'أملك حق استخدام الصور والتصاميم المرفقة وأوافق على رفعها لإتمام الطلب.' : 'I have permission to use my uploaded images and designs, and agree to upload them for this order.'}</span></label><button className="primary-button full-width" disabled={busy || !session || !backend || !checkoutEnabled || !consent}>{busy ? <LoaderCircle className="spin" size={18} /> : <ShieldCheck size={18} />}{busy ? (ar ? 'جارٍ تجهيز الدفع…' : 'Preparing secure checkout…') : (ar ? 'المتابعة للدفع الآمن' : 'Continue to secure payment')}</button><p className="fine-print">{ar ? 'عند تفعيل الخدمة ستُدخل تفاصيل البطاقة لدى مزوّد الدفع، وليس على هذا الموقع.' : 'When connected, card details are entered on the payment provider’s secure page, never on this website.'}</p>{error && <p className="form-message error" role="alert">{error}</p>}</form>
+      </div><aside className="order-summary"><p className="eyebrow">{ar ? 'ملخص الطلب' : 'YOUR ORDER'}</p>{items.map(item => <div className="summary-line" key={item.id}><span>{item.quantity} × {ar ? item.ar : item.name}</span><span>{money(item.price * item.quantity, lang)}</span></div>)}<div className="summary-line"><span>{ar ? 'الاستلام' : 'Workshop pickup'}</span><span>{money(0, lang)}</span></div><div className="summary-line total-line"><span>{ar ? 'المجموع التقديري' : 'Estimated total'}</span><strong>{money(total, lang)}</strong></div><p className="fine-print">{ar ? 'يُحسب المبلغ النهائي في الخادم وفق الأسعار المعتمدة قبل الدفع.' : 'The server calculates the final amount from the approved catalogue before payment.'}</p><a className="text-button" href="#cart">{ar ? 'تعديل الحقيبة' : 'Edit your bag'}</a></aside></div>}</section>
+}
+export function Orders({ lang, session }: { lang: Language; session: Session | null }) {
+  const ar = lang === 'ar'
+  const [orders, setOrders] = useState<{ id: string; status: string; total_qar: number; created_at: string }[]>([]), [busy, setBusy] = useState(!!session), [error, setError] = useState('')
+  useEffect(() => {
+    if (!session || !backend) return
+    let cancelled = false
+    const run = async () => {
+      const paymentId = new URLSearchParams(location.search).get('paymentId')
+      if (paymentId) {
+        const verified = await backend!.functions.invoke('verify-payment', { body: { paymentId } })
+        if (verified.error && !cancelled) setError(ar ? 'تعذّر التحقق من الدفع. لا تعاود الدفع قبل التأكد من حالة الطلب.' : 'Payment could not be verified yet. Check your order status before trying another payment.')
+      }
+      const result = await backend!.from('orders').select('id,status,total_qar,created_at').order('created_at', { ascending: false }).limit(30)
+      if (!cancelled) { if (result.error) setError(ar ? 'تعذّر تحميل الطلبات.' : 'Orders could not be loaded.'); else setOrders(result.data ?? []); setBusy(false) }
+    }
+    run().catch(() => { if (!cancelled) { setError(ar ? 'تعذّر الاتصال بخدمة الطلبات.' : 'Could not connect to the order service.'); setBusy(false) } })
+    return () => { cancelled = true }
+  }, [session, ar])
+  const statuses: Record<string, [string, string]> = { pending: ['Awaiting payment', 'بانتظار الدفع'], paid: ['Payment confirmed', 'تم تأكيد الدفع'], failed: ['Payment not completed', 'لم يكتمل الدفع'], processing: ['Being made', 'قيد التصنيع'], ready: ['Ready for pickup', 'جاهز للاستلام'], cancelled: ['Cancelled', 'ملغي'] }
+  return <section className="shop-page wrap"><div className="page-heading"><p className="eyebrow">ELIKE / {ar ? 'حسابك' : 'YOUR ACCOUNT'}</p><h1>{ar ? 'طلباتك.' : 'Your little things, in the making.'}</h1></div>{!session ? <div className="empty-state"><a className="primary-button" href="#account">{ar ? 'سجّل الدخول لعرض الطلبات' : 'Sign in to see your orders'}</a></div> : busy ? <p role="status">{ar ? 'جارٍ تحميل الطلبات…' : 'Finding your orders…'}</p> : orders.length ? <div className="orders-list">{orders.map(order => <article key={order.id}><Package size={24} /><div><h2>ELIKE · {order.id.slice(0, 8).toUpperCase()}</h2><p>{new Date(order.created_at).toLocaleDateString(ar ? 'ar-QA' : 'en-QA')}</p></div><span>{statuses[order.status]?.[ar ? 1 : 0] ?? order.status}</span><strong>{money(order.total_qar, lang)}</strong></article>)}</div> : <div className="empty-state"><Package size={40} /><h2>{ar ? 'لا توجد طلبات بعد.' : 'Your first little thing is still to come.'}</h2><a className="primary-button" href="#store">{ar ? 'إلى المتجر' : 'Explore the store'}</a></div>}{error && <p className="form-message error" role="alert">{error}</p>}</section>
+}
