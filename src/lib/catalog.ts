@@ -21,7 +21,7 @@ export type CartItem = {
   color?: number; column?: number; config?: Record<string, unknown>; thumbnail?: string; assetId?: string;
 }
 export const money = (n: number, lang: Language) => new Intl.NumberFormat(lang === 'ar' ? 'ar-QA' : 'en-QA', { style: 'currency', currency: 'QAR', maximumFractionDigits: 0 }).format(n)
-export const lithoSizes = [{ id: 'small', label: '10 × 15 cm', price: 65 }, { id: 'medium', label: '13 × 18 cm', price: 85 }, { id: 'large', label: '15 × 20 cm', price: 110 }]
+export const lithoSizes = [{ id: 'small', label: '10 × 15 cm', width: 10, height: 15, price: 65 }, { id: 'medium', label: '12 × 16 cm', width: 12, height: 16, price: 85 }, { id: 'large', label: '14 × 17 cm', width: 14, height: 17, price: 110 }]
 
 export const motifOptions: { kind: MotifKind; en: string; ar: string }[] = [
   { kind: 'heart', en: 'Heart', ar: 'قلب' }, { kind: 'flower', en: 'Flower', ar: 'زهرة' }, { kind: 'rose', en: 'Rose', ar: 'وردة' },

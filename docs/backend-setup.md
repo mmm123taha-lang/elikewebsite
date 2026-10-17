@@ -37,7 +37,7 @@ GitHub Pages builds and source control.
 
 The catalogue seeds four keychains at the owner's approved QAR 15 each. The planter,
 stand, stencil, lithophane sizes, and LED base are sample prices with `approved=false`.
-Approve actual product specifications and prices in `public.products`, and update
+The proposed lithophane outer sizes (10 × 15, 12 × 16, 14 × 17 cm) stay within a 180 mm printer bed; verify frame/base tolerances with the workshop. Approve actual product specifications and prices in `public.products`, and update
 `src/lib/catalog.ts` to match before offering those products for sale. The server
 rejects unapproved products and changed totals, even if someone edits browser prices.
 

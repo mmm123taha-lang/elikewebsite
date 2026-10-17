@@ -39,7 +39,7 @@ export function Lithophane({ lang, add }: { lang: Language; add: (item: CartItem
     const image = new Image()
     image.onload = () => {
       if (cancelled) return
-      const width = 600, height = size === 0 ? 900 : size === 1 ? 830 : 800
+      const width = 600, height = Math.round(600 * lithoSizes[size].height / lithoSizes[size].width)
       output.width = width; output.height = height
       const scale = Math.max(width / image.width, height / image.height) * zoom
       context.drawImage(image, (width - image.width * scale) / 2, (height - image.height * scale) / 2, image.width * scale, image.height * scale)

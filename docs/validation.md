@@ -7,7 +7,7 @@
 - `npm test`: seven server pricing/validation tests passed. They cover submitted-price tampering,
   invalid quantities, unapproved products, invalid colours, server-priced lithophane options,
   cross-customer photo paths, stencil bounds, and bag limits.
-- `npm run test:e2e`: 19 Chromium tests passed. They exercise bee entrance and pointer following,
+- `npm run test:e2e`: 20 Chromium tests passed. They exercise bee entrance and pointer following,
   six products and colour picture selection, QAR 15 keychains, cart quantities/totals/reload,
   motif placement/size/duplication/undo/keyboard movement/persistence, custom cart thumbnails,
   nine-second video metadata/skip/automatic advance, upload/light toggle/size/base/shape pricing/photo persistence,

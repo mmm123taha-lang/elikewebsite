@@ -15,8 +15,8 @@ insert into public.products (id,name,price_qar,approved) values
  ('phone-stand','Take a little stand',30,false),
  ('henna-stencil','Custom henna stencil',25,false),
  ('lithophane-small','Lithophane 10 × 15 cm',65,false),
- ('lithophane-medium','Lithophane 13 × 18 cm',85,false),
- ('lithophane-large','Lithophane 15 × 20 cm',110,false),
+ ('lithophane-medium','Lithophane 12 × 16 cm',85,false),
+ ('lithophane-large','Lithophane 14 × 17 cm',110,false),
  ('led-base','LED base',25,false);
 create table public.orders (
   id uuid primary key default gen_random_uuid(),
