@@ -20,12 +20,12 @@ with `npx playwright install chromium` on machines without it. The test config u
 
 ## Implemented
 
-- Bee entrance once per browser tab; gentle pointer following; reduced-motion support.
+- Two-second bee flight across several points on page load, then a fixed landing and gentle pointer following. Returning home does not replay the flight; reduced motion skips it.
 - Six products with three distinct colour renders. Four keychains are QAR 15 each.
 - Henna editor: 15 × 3 cm strip; 12 motifs; placement, dragging, size, rotation,
   duplication, undo, keyboard movement, saved draft and SVG design download.
-- Lithophane: nine-second illustrated MP4 intro with skip, photo upload, lit/unlit
-  preview, size/shape/zoom/LED options and proposed prices. Photos stay in IndexedDB on this device;
+- Lithophane: nine-second 3D product video with skip, photo upload, a rotatable
+  white relief with simulated backlighting, size/shape/zoom/LED options and proposed prices. Photos stay in IndexedDB on this device;
   the preview checkout never uploads them. This is a preview, not an STL/mesh generator.
 - Saved cart including per-colour quantities and custom designs; review/checkout screen.
 - Supabase email magic-link sign-in and order-history integration prepared. Secure
@@ -43,5 +43,15 @@ read the equivalent GitHub repository variables. Never put server credentials in
 `VITE_*` variable. See [deployment](docs/deploy.md) and [validation](docs/validation.md).
 
 Product images are illustrative AI-generated render previews, not photographs of
-verified manufactured stock. The introductory video is an original animated
-explanation. Brand vectors originate from the owner's supplied artwork.
+verified manufactured stock. The introductory video is a rendered 3D product visualization using an AI-generated sample photograph, not filmed footage or a customer photo. Brand vectors originate from the owner's supplied artwork.
+
+## Regenerate the lithophane video
+
+With Chromium and FFmpeg available, run `node scripts/render-lithophane-video.cjs`.
+It builds the 3D renderer into `/tmp`, serves an isolated snapshot, captures 216 frames,
+and creates a nine-second H.264 video plus poster. It does not need the app server or
+any external service. `CHROMIUM_PATH` overrides the browser executable.
+
+The live 3D preview uses WebGL 2. Its render loop sleeps when lighting and camera are
+unchanged. Photographs remain local. Optical attenuation, relief and material grain
+are visual simulations, not a calibrated print profile or manufacturing output.

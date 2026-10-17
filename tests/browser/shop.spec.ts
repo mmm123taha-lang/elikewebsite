@@ -1,4 +1,11 @@
 import { test, expect } from '@playwright/test'
+function previewFingerprint(canvas: HTMLCanvasElement) {
+  const sample = document.createElement('canvas'); sample.width = 32; sample.height = 32
+  const context = sample.getContext('2d')!; context.drawImage(canvas, 0, 0, 32, 32)
+  let hash = 2166136261
+  for (const byte of context.getImageData(0, 0, 32, 32).data) hash = Math.imul(hash ^ byte, 16777619)
+  return hash >>> 0
+}
 test('bee arrives once and follows the mouse; henna replaces the middle card', async ({ page }) => {
   await page.goto('/#home')
   await expect(page.locator('.bee-arrival')).toHaveAttribute('data-arrived', 'true')
@@ -57,6 +64,7 @@ test('henna placement, resize, duplicate, undo, keyboard edit, persistence, and 
   await expect(page.locator('.cart-thumbnail img')).toHaveAttribute('src', /^data:image\/svg/)
 })
 test('nine-second lithophane intro, skip, upload, light toggle, dimensions and private saved photo', async ({ page }) => {
+  const graphicsErrors: string[] = []; page.on('console', message => { if (/INVALID_OPERATION|THREE.WebGLRenderer:/.test(message.text())) graphicsErrors.push(message.text()) })
   await page.goto('/#lithophane')
   const video = page.locator('video')
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.duration)).toBe(9)
@@ -65,10 +73,12 @@ test('nine-second lithophane intro, skip, upload, light toggle, dimensions and p
   await page.locator('input[type=file]').setInputFiles({ name: 'memory.png', mimeType: 'image/png', buffer: Buffer.from(fixture, 'base64') })
   const canvas = page.locator('.photo-frame canvas')
   await expect(canvas).toBeVisible()
-  await expect.poll(() => canvas.evaluate((c: HTMLCanvasElement) => c.width)).toBe(600)
-  const lit = await canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL())
+  await expect(canvas).toHaveAttribute('data-photo', /^blob:/)
+  await expect(canvas).toHaveAttribute('data-ready', 'true')
+  expect(await canvas.evaluate((c: HTMLCanvasElement) => c.width)).toBeGreaterThan(0)
+  const lit = await canvas.evaluate(previewFingerprint)
   await page.getByRole('button', { name: 'Light off', exact: true }).click()
-  await expect.poll(() => page.locator('.photo-frame canvas').evaluate((c: HTMLCanvasElement) => c.toDataURL())).not.toBe(lit)
+  await expect.poll(() => page.locator('.photo-frame canvas').evaluate(previewFingerprint)).not.toBe(lit)
   await page.getByRole('button', { name: /12 × 16 cm/ }).click()
   await page.getByRole('checkbox', { name: /Add an LED base/ }).check()
   await expect(page.locator('.studio-price')).toContainText('110')
@@ -82,6 +92,7 @@ test('nine-second lithophane intro, skip, upload, light toggle, dimensions and p
   expect(bag[0].price).toBe(110)
   await page.goto('/#lithophane'); await page.getByRole('button', { name: 'Skip intro', exact: true }).click()
   await expect(page.locator('.photo-frame canvas')).toBeVisible()
+  expect(graphicsErrors).toEqual([])
 })
 test('unconnected accounts and payments never pretend to sign in or accept a payment', async ({ page }) => {
   await page.goto('/#account')
@@ -134,4 +145,33 @@ test('Arabic mobile designer places the chosen motif in the visible centre of th
   await expect(page.locator('[data-motif-id]')).toHaveCount(1)
   await expect.poll(() => page.locator('.canvas-scroller').evaluate(e => e.scrollLeft)).toBeLessThan(0)
   await expect(page.locator('[data-motif-id]')).toBeInViewport()
+})
+test('bee travels between points for two seconds, then lands in its home position', async ({ page }) => {
+  await page.addInitScript(() => {
+    const trail: { t: number; x: number; y: number; phase: string }[] = []
+    Object.assign(window, { beeTrail: trail })
+    const sample = () => { const bee = document.querySelector<HTMLElement>('.bee-arrival'); if (bee) { const r = bee.getBoundingClientRect(); trail.push({ t: performance.now(), x: r.left, y: r.top, phase: bee.dataset.phase ?? '' }); if (bee.dataset.phase === 'landed') return }; requestAnimationFrame(sample) }
+    requestAnimationFrame(sample)
+  })
+  await page.goto('/#home')
+  await expect(page.locator('.bee-arrival')).toHaveAttribute('data-phase', 'landed')
+  const trail = await page.evaluate(() => (window as unknown as { beeTrail: { t: number; x: number; y: number; phase: string }[] }).beeTrail)
+  const flying = trail.filter(t => t.phase === 'flying')
+  expect(flying.length).toBeGreaterThan(8)
+  expect(trail.at(-1)!.t - flying[0].t).toBeGreaterThan(1800)
+  expect(trail.at(-1)!.t - flying[0].t).toBeLessThan(2600)
+  expect(Math.max(...flying.map(p => p.x)) - Math.min(...flying.map(p => p.x))).toBeGreaterThan(400)
+  const home = await page.locator('.bee-orbit').boundingBox(), bee = await page.locator('.bee-arrival').boundingBox()
+  expect(Math.abs((bee!.x + bee!.width / 2) - (home!.x + home!.width / 2))).toBeLessThan(2)
+  await page.getByRole('link', { name: 'The store', exact: true }).first().click()
+  await page.getByRole('link', { name: 'ELIKE home', exact: true }).first().click()
+  await expect(page.locator('.bee-arrival')).toHaveAttribute('data-phase', 'landed')
+})
+test('3D photo relief can be inspected with the keyboard', async ({ page }) => {
+  await page.goto('/#lithophane'); await page.getByRole('button', { name: 'Skip intro', exact: true }).click()
+  const canvas = page.locator('.litho-3d-viewer canvas')
+  await expect(canvas).toHaveAttribute('data-ready', 'true')
+  const before = await canvas.evaluate(previewFingerprint)
+  await page.locator('.litho-3d-viewer').focus(); await page.keyboard.press('ArrowRight')
+  await expect.poll(() => canvas.evaluate(previewFingerprint)).not.toBe(before)
 })

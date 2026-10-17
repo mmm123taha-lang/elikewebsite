@@ -37,7 +37,7 @@ const copy = {
   },
   ar: {
     nav: 'الاحتمالات', about: 'كيف نصنعها', language: 'English', location: 'ورشة صغيرة. وعالم من الاحتمالات.',
-    eyebrow: 'من خيالك. إلى واقع تصنعه إيلايك.', title: 'أفكار صغيرة.', title2: 'تصبح حقيقة.',
+    eyebrow: 'من خيالك. إلى واقع تصنعه إليك.', title: 'أفكار صغيرة.', title2: 'تصبح حقيقة.',
     intro: 'شيء مفيد. شيء شخصي. شيء لا يخطر إلا ببالك. نحن هنا لنمنحه الحياة، بتفاصيل تصنع الفرق.',
     badge: 'صُنع بعناية في قطر', scroll: 'اختر نقطة البداية',
     cards: [
@@ -48,7 +48,7 @@ const copy = {
     processEyebrow: 'من شرارة فكرة إلى قطعة بين يديك', processTitle: 'ورشة صغيرة.\nوإمكانات كثيرة.',
     processText: 'قطع مطبوعة بتقنية ثلاثية الأبعاد وقوالب مقصوصة بدقة. نحول الأفكار الرقمية إلى واقع، بصبر وفضول واهتمام بالتفاصيل.',
     steps: [['٠١', 'تخيّلها', 'حل عملي، أو هدية مميزة، أو فكرة بلا مناسبة.'], ['٠٢', 'أضف لمستك', 'الشكل والتفاصيل واللمسة التي تعبّر عنك.'], ['٠٣', 'نمنحها الحياة', 'نصنعها في ورشتنا في قطر، قطعة تلو الأخرى.']],
-    footer: 'صناعة صغيرة. وخيال بلا حدود.', rights: 'إيلايك · صُنع في قطر', preview: 'لمحة عمّا هو قادم', soon: 'قريباً', note: 'هذه التجربة قيد التطوير. الطلبات ورفع التصاميم والدفع غير متاحة بعد.', close: 'تابع الاستكشاف', closeLabel: 'إغلاق المعاينة',
+    footer: 'صناعة صغيرة. وخيال بلا حدود.', rights: 'إليك · صُنع في قطر', preview: 'لمحة عمّا هو قادم', soon: 'قريباً', note: 'هذه التجربة قيد التطوير. الطلبات ورفع التصاميم والدفع غير متاحة بعد.', close: 'تابع الاستكشاف', closeLabel: 'إغلاق المعاينة',
   },
 }
 
@@ -114,7 +114,7 @@ function Website() {
   const [session, setSession] = useState<Session | null>(null)
   const [notice, setNotice] = useState('')
   const ar = language === 'ar', t = copy[language]
-  useEffect(() => { document.documentElement.lang = language; document.documentElement.dir = ar ? 'rtl' : 'ltr'; save('elike-language-v2', language) }, [language, ar])
+  useEffect(() => { document.documentElement.lang = language; document.documentElement.dir = ar ? 'rtl' : 'ltr'; document.title = ar ? 'إليك — أفكار صغيرة. تصبح حقيقة.' : 'ELIKE — Little ideas. Made real.'; save('elike-language-v2', language) }, [language, ar])
   useEffect(() => {
     const change = () => setRoute(readRoute()); window.addEventListener('hashchange', change)
     return () => window.removeEventListener('hashchange', change)
@@ -137,12 +137,12 @@ function Website() {
   const count = items.reduce((sum, item) => sum + item.quantity, 0)
   return <>
     <a className="skip-link" href="#main" onClick={e => { e.preventDefault(); document.getElementById('main')?.focus() }}>{ar ? 'انتقل إلى المحتوى' : 'Skip to content'}</a>
-    <header className="site-header wrap shop-header"><a href="#home" className="brand-link" aria-label="ELIKE home"><img src={brand('elike-wordmark.svg')} height="34" alt="ELIKE" /></a><nav className="desktop-shop-nav" aria-label={ar ? 'التنقل الرئيسي' : 'Main navigation'}><a href="#store" aria-current={route === 'store' ? 'page' : undefined}>{ar ? 'المتجر' : 'The store'}</a><a href="#henna" aria-current={route === 'henna' ? 'page' : undefined}>{ar ? 'حنّة' : 'Henna'}</a><a href="#lithophane" aria-current={route === 'lithophane' ? 'page' : undefined}>{ar ? 'ليثوفان' : 'Lithophanes'}</a></nav><div className="header-actions"><button type="button" className="language-button" onClick={() => setLanguage(ar ? 'en' : 'ar')} lang={ar ? 'en' : 'ar'}>{t.language}</button><a href="#account" className="icon-button account-link" aria-label={session ? (ar ? 'حسابي' : 'Your account') : (ar ? 'تسجيل الدخول' : 'Sign in')}><UserRound size={20} />{session && <span className="account-dot" />}</a><a href="#cart" className="icon-button bag-link" aria-label={`${ar ? 'الحقيبة' : 'Shopping bag'}, ${count}`}><ShoppingBag size={20} />{count > 0 && <span className="bag-count">{count}</span>}</a></div></header>
+    <header className="site-header wrap shop-header"><a href="#home" className="brand-link" aria-label={ar ? 'إليك — الرئيسية' : 'ELIKE home'}><img src={brand('elike-wordmark.svg')} height="34" alt={ar ? 'إليك' : 'ELIKE'} /></a><nav className="desktop-shop-nav" aria-label={ar ? 'التنقل الرئيسي' : 'Main navigation'}><a href="#store" aria-current={route === 'store' ? 'page' : undefined}>{ar ? 'المتجر' : 'The store'}</a><a href="#henna" aria-current={route === 'henna' ? 'page' : undefined}>{ar ? 'حنّة' : 'Henna'}</a><a href="#lithophane" aria-current={route === 'lithophane' ? 'page' : undefined}>{ar ? 'ليثوفان' : 'Lithophanes'}</a></nav><div className="header-actions"><button type="button" className="language-button" onClick={() => setLanguage(ar ? 'en' : 'ar')} lang={ar ? 'en' : 'ar'}>{t.language}</button><a href="#account" className="icon-button account-link" aria-label={session ? (ar ? 'حسابي' : 'Your account') : (ar ? 'تسجيل الدخول' : 'Sign in')}><UserRound size={20} />{session && <span className="account-dot" />}</a><a href="#cart" className="icon-button bag-link" aria-label={`${ar ? 'الحقيبة' : 'Shopping bag'}, ${count}`}><ShoppingBag size={20} />{count > 0 && <span className="bag-count">{count}</span>}</a></div></header>
     <nav className="mobile-shop-nav wrap" aria-label={ar ? 'التنقل الرئيسي' : 'Main navigation'}><a href="#store" aria-current={route === 'store' ? 'page' : undefined}>{ar ? 'المتجر' : 'The store'}</a><a href="#henna" aria-current={route === 'henna' ? 'page' : undefined}>{ar ? 'حنّة' : 'Henna'}</a><a href="#lithophane" aria-current={route === 'lithophane' ? 'page' : undefined}>{ar ? 'ليثوفان' : 'Lithophanes'}</a></nav>
     <main id="main" tabIndex={-1}><Suspense fallback={<div className="wrap loading-page" role="status">{ar ? 'لحظة، نجهّز التفاصيل…' : 'Just a moment. Making room for little things…'}</div>}>
       {route === 'home' && <Home language={language} />}{route === 'store' && <Store lang={language} add={add} />}{route === 'henna' && <Henna lang={language} add={add} />}{route === 'lithophane' && <Lithophane lang={language} add={add} />}{route === 'cart' && <Cart lang={language} items={items} change={(id, quantity) => updateBag(items.map(i => i.id === id ? { ...i, quantity: Math.max(0, Math.min(20, quantity)) } : i).filter(i => i.quantity > 0))} />}{route === 'checkout' && <Checkout lang={language} items={items} session={session} />}{route === 'account' && <Account lang={language} session={session} />}{route === 'orders' && <Orders lang={language} session={session} />}
     </Suspense></main>
-    <footer className="site-footer wrap"><a href="#home" className="brand-link" aria-label="ELIKE home"><img src={brand('elike-wordmark.svg')} height="25" alt="ELIKE" /></a><p>{t.footer}</p><span>{t.rights}</span></footer>
+    <footer className="site-footer wrap"><a href="#home" className="brand-link" aria-label={ar ? 'إليك — الرئيسية' : 'ELIKE home'}><img src={brand('elike-wordmark.svg')} height="25" alt={ar ? 'إليك' : 'ELIKE'} /></a><p>{t.footer}</p><span>{t.rights}</span></footer>
     <AnimatePresence>{notice && <motion.div role="status" className="bag-toast" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Check size={17} /><span>{notice}</span><a href="#cart">{ar ? 'عرض الحقيبة' : 'View bag'}</a><button className="icon-button" aria-label={ar ? 'إغلاق التنبيه' : 'Dismiss notification'} onClick={() => setNotice('')}><X size={16} /></button></motion.div>}</AnimatePresence>
   </>
 }

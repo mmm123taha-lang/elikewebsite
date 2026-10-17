@@ -4,10 +4,10 @@
 
 - `npm run build`: TypeScript project build and Vite production compilation passed.
 - `npm run lint`: Oxlint passed without warnings.
-- `npm test`: eight server pricing/validation tests passed. They cover submitted-price tampering,
+- `npm test`: eight server pricing/validation tests and three optical-simulation tests passed. They cover bright/thin and dark/thick optical behavior, thickness bounds, transparent pixels, submitted-price tampering,
   invalid quantities, unapproved products, invalid colours, server-priced lithophane options,
   cross-customer photo paths, stencil bounds, and bag limits.
-- `npm run test:e2e`: 20 Chromium tests passed. They exercise bee entrance and pointer following,
+- `npm run test:e2e`: 22 Chromium tests passed. They exercise bee entrance and pointer following,
   six products and colour picture selection, QAR 15 keychains, cart quantities/totals/reload,
   motif placement/size/duplication/undo/keyboard movement/persistence, custom cart thumbnails,
   nine-second video metadata/skip/automatic advance, upload/light toggle/size/base/shape pricing/photo persistence,
@@ -26,7 +26,7 @@ Supabase is not provisioned, the migration/RLS policies have not been run in a S
 project, email delivery is not tested, and the owner has not selected a payment provider.
 The candidate MyFatoorah adapter has not performed a sandbox or live transaction. It must
 be reviewed against the selected merchant account, sandbox-tested, and accepted before
-both checkout flags are enabled. The frontend visibly prevents real ordering meanwhile.
+a future payment flow is explicitly implemented and activated. The frontend visibly prevents real ordering meanwhile.
 
 Lithophane previews simulate transmitted light; they do not generate a fabrication mesh.
 Henna designs require workshop cut/bridge review. Product renders illustrate the sample
@@ -63,3 +63,22 @@ The owner requested payment remain a page preview. The frontend payment/upload
 handler and activation flag were removed. Build, lint, and the focused account/checkout
 browser check passed, including form submission that sends no payment/upload request.
 Sign-in remains inactive until a Supabase project is connected.
+
+## Realistic lithophane and bee update
+
+The bee follows a multi-point flight for two seconds before settling. Browser sampling
+checks actual positions over time, final centering, and pointer following. The 3D
+preview builds a bounded photo-derived relief and simulates white PLA, backlight
+transmission, print layers, wood grain, contact shadows, and a curved studio backdrop.
+Pointer dragging and keyboard arrows rotate the same photo relief. New visual media
+is an original 3D product visualization; it is not represented as camera footage.
+
+The 3D renderer is loaded with the lithophane route (about 150 KB compressed), not
+on the landing page. Unsupported WebGL browsers get a clearly labelled fallback
+instead of a fabricated 3D result.
+
+The production build was also served under `/elikewebsite/` and checked for video,
+3D textures, lighting controls, and Arabic branding (`إليك` in the page title,
+footer, accessible logo labels, and account page). No failed asset requests or page
+errors occurred. Custom-domain instructions are documented; `elike.qa` remains
+unconnected until ownership and DNS access are confirmed.

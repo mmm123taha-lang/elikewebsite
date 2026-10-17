@@ -4,6 +4,7 @@ import { Upload, Sun, Moon, ShoppingBag, Check, Play, ArrowRight, ImagePlus, Rot
 import { asset, lithoSizes, money } from '@/lib/catalog'
 import type { CartItem, Language } from '@/lib/catalog'
 import { getAsset, readSaved, save, saveAsset } from '@/lib/persistence'
+import { LithophaneViewer } from './LithophaneViewer'
 export function Lithophane({ lang, add }: { lang: Language; add: (item: CartItem) => void }) {
   const ar = lang === 'ar', reduced = useReducedMotion()
   const [intro, setIntro] = useState(true)
@@ -31,35 +32,6 @@ export function Lithophane({ lang, add }: { lang: Language; add: (item: CartItem
   // The saved image is loaded once; changing language should not reload it.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  useEffect(() => {
-    if (!photo || !canvas.current) return
-    const output = canvas.current, context = output.getContext('2d')
-    if (!context) return
-    let cancelled = false
-    const image = new Image()
-    image.onload = () => {
-      if (cancelled) return
-      const width = 600, height = Math.round(600 * lithoSizes[size].height / lithoSizes[size].width)
-      output.width = width; output.height = height
-      const scale = Math.max(width / image.width, height / image.height) * zoom
-      context.drawImage(image, (width - image.width * scale) / 2, (height - image.height * scale) / 2, image.width * scale, image.height * scale)
-      const pixels = context.getImageData(0, 0, width, height)
-      for (let i = 0; i < pixels.data.length; i += 4) {
-        const v = (.2126 * pixels.data[i] + .7152 * pixels.data[i + 1] + .0722 * pixels.data[i + 2]) / 255
-        const thickness = .8 + (1 - v) * 2.4
-        const transmission = Math.exp(-.65 * thickness)
-        const brightness = lit ? 54 + transmission * 250 : 212 + v * 14
-        const line = Math.floor(i / 4 / width) % 3 === 0 ? (lit ? 2 : 3) : 0
-        pixels.data[i] = Math.min(255, brightness + (lit ? 25 : 8) - line)
-        pixels.data[i + 1] = Math.min(255, brightness + (lit ? 14 : 6) - line)
-        pixels.data[i + 2] = Math.min(255, brightness - (lit ? 18 : 0) - line)
-      }
-      context.putImageData(pixels, 0, 0)
-    }
-    image.onerror = () => setError(ar ? 'تعذّر عرض هذه الصورة.' : 'This image could not be displayed.')
-    image.src = photo
-    return () => { cancelled = true }
-  }, [photo, lit, size, zoom, ar, shape, intro])
   async function choose(file?: File) {
     if (!file) return
     setError(''); setBusy(true)
@@ -76,7 +48,7 @@ export function Lithophane({ lang, add }: { lang: Language; add: (item: CartItem
     } catch { setError(ar ? 'تعذّر حفظ الصورة. تحقق من صلاحية الملف ومساحة المتصفح.' : 'Could not save the photo. Check the image and available browser storage.') } finally { setBusy(false); if (upload.current) upload.current.value = '' }
   }
   function addDesign() {
-    if (!canvas.current || !assetId) return
+    if (!canvas.current || !assetId || canvas.current.dataset.ready !== 'true') { setError(ar ? 'لحظة، نجهّز المعاينة.' : 'Just a moment — your preview is still being prepared.'); return }
     const thumbnail = document.createElement('canvas'); thumbnail.width = 100; thumbnail.height = 145
     thumbnail.getContext('2d')!.drawImage(canvas.current, 0, 0, 100, 145)
     add({ id: crypto.randomUUID(), productId: 'lithophane', name: 'Your photo, in a new light', ar: 'صورتك في ضوء جديد', price, quantity: 1, assetId, config: { size: lithoSizes[size].id, dimensions: lithoSizes[size].label, shape, led, zoom }, thumbnail: thumbnail.toDataURL('image/jpeg', .7) }); setAdded(true); setTimeout(() => setAdded(false), 1800)
@@ -85,11 +57,14 @@ export function Lithophane({ lang, add }: { lang: Language; add: (item: CartItem
     <div className="page-heading"><p className="eyebrow">{ar ? 'استوديو الليثوفان / ذاكرة مضيئة' : 'THE LITHOPHANE STUDIO / A MEMORY, REIMAGINED'}</p><h1>{ar ? 'ذكرياتك. في ضوء جديد.' : 'Your memories. A new light.'}</h1><p>{ar ? 'ارفع صورة وجرّب الضوء لتكتشف التفاصيل.' : 'Upload a favourite photograph. Add a little light. Watch the memory appear.'}</p></div>
     <AnimatePresence mode="wait">{intro ? <motion.div key="intro" className="litho-intro" initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <div className="intro-copy"><span className="eyebrow">{ar ? 'كيف يعمل؟ / ٩ ثوانٍ' : 'HOW IT WORKS / 9 SECONDS'}</span><h2>{ar ? 'ليست مجرد صورة.' : 'More than a photograph.'}</h2><p>{ar ? 'نطبع صورتك بسماكات دقيقة. عندما يمر الضوء خلالها، تظهر التفاصيل.' : 'Your photograph becomes a relief of delicate printed layers. The thinner areas let more light through, revealing your picture.'}</p><button className="primary-button" onClick={() => setIntro(false)}>{ar ? 'ابدأ بصورتك' : 'Start with your photograph'}<ArrowRight size={17} /></button></div>
-      <div className="intro-video"><video ref={video} src={asset('media/lithophane-intro.mp4')} poster={asset('media/lithophane-poster.jpg')} autoPlay={!reduced} muted playsInline preload="metadata" onTimeUpdate={e => setProgress(Math.min(9, e.currentTarget.currentTime))} onEnded={() => setIntro(false)} aria-label={ar ? 'فيديو يشرح الليثوفان خلال تسع ثوانٍ' : 'Nine-second illustrated explanation of how a lithophane works'} /><button className="skip-intro" onClick={() => setIntro(false)}>{ar ? 'تخطّي' : 'Skip intro'}<ArrowRight size={16} /></button><button className="video-play" aria-label={ar ? 'تشغيل الفيديو' : 'Play video'} onClick={() => { video.current?.play().catch(() => setError(ar ? 'اضغط تخطّي لبدء التصميم.' : 'Tap Skip intro to start designing.')) }}><Play size={18} /></button><span className="intro-count">{Math.ceil(9 - progress)}s</span><div className="intro-progress"><span style={{ transform: `scaleX(${progress / 9})` }} /></div></div>
+      <div className="intro-video"><video ref={video} src={asset('media/lithophane-intro.mp4')} poster={asset('media/lithophane-poster.jpg')} autoPlay={!reduced} muted playsInline preload="metadata" onTimeUpdate={e => setProgress(Math.min(9, e.currentTarget.currentTime))} onEnded={() => setIntro(false)} aria-label={ar ? 'فيديو يشرح الليثوفان خلال تسع ثوانٍ' : 'Nine-second 3D product visualization of a lithophane with its backlight off and on'} /><button className="skip-intro" onClick={() => setIntro(false)}>{ar ? 'تخطّي' : 'Skip intro'}<ArrowRight size={16} /></button><button className="video-play" aria-label={ar ? 'تشغيل الفيديو' : 'Play video'} onClick={() => { video.current?.play().catch(() => setError(ar ? 'اضغط تخطّي لبدء التصميم.' : 'Tap Skip intro to start designing.')) }}><Play size={18} /></button><span className="intro-count">{Math.ceil(9 - progress)}s</span><div className="intro-progress"><span style={{ transform: `scaleX(${progress / 9})` }} /></div></div>
     </motion.div> : <motion.div key="studio" initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="studio-layout">
       <div className="litho-workspace"><div className="workspace-toolbar"><span>{ar ? 'معاينة صورتك' : 'YOUR PHOTO PREVIEW'}</span><button className="text-button" onClick={() => { setIntro(true); setProgress(0) }}><Play size={14} />{ar ? 'كيف يعمل؟' : 'How it works'}</button></div>
-        <div className={`litho-preview ${lit ? 'is-lit' : 'is-unlit'}`}><div className="photo-glow" />{photo ? <motion.div className={`photo-frame shape-${shape}`} animate={reduced ? {} : { opacity: 1 }} key={`${shape}-${size}-${lit}`} initial={reduced ? false : { opacity: .5 }}><canvas ref={canvas} aria-label={lit ? (ar ? 'صورتك مع إضاءة خلفية' : 'Your uploaded photograph with simulated backlighting') : (ar ? 'صورتك بدون إضاءة خلفية' : 'Your uploaded photograph without backlighting')} /><div className="photo-base" /></motion.div> : <button className="upload-empty" onClick={() => upload.current?.click()}><ImagePlus size={40} strokeWidth={1} /><span>{ar ? 'كل صورة تحمل قصة.' : 'Every photograph has a story.'}</span><small>{ar ? 'ارفع صورتك لتشاهدها في ضوء جديد.' : 'Upload yours to see it in a new light.'}</small></button>}</div>
-        <div className="light-toolbar"><div className="segmented dark-segmented"><button aria-pressed={lit} onClick={() => setLit(true)}><Sun size={16} />{ar ? 'مع ضوء' : 'Light on'}</button><button aria-pressed={!lit} onClick={() => setLit(false)}><Moon size={16} />{ar ? 'بدون ضوء' : 'Light off'}</button></div><span>{ar ? 'معاينة تقريبية على الشاشة' : 'Simulated screen preview'}</span></div>
+        <div className={`litho-preview realistic-preview ${lit ? 'is-lit' : 'is-unlit'}`}>
+          <div className="photo-frame scene-frame"><LithophaneViewer photo={photo ?? asset('media/lithophane-example.webp')} width={lithoSizes[size].width} height={lithoSizes[size].height} shape={shape} zoom={zoom} lit={lit} lang={lang} onReady={output => { canvas.current = output }} onError={() => setError(ar ? 'تعذّر تجهيز المعاينة ثلاثية الأبعاد. جرّب متصفحاً يدعم WebGL.' : 'The 3D preview could not be prepared. Try a browser with WebGL support.')} /></div>
+          {!photo && <button className="upload-empty upload-example-cta" onClick={() => upload.current?.click()}><ImagePlus size={22} strokeWidth={1.5} /><span>{ar ? 'مثال توضيحي — جرّب صورتك' : 'Example photograph — try yours'}</span></button>}
+        </div>
+        <div className="light-toolbar"><div className="segmented dark-segmented"><button aria-pressed={lit} onClick={() => setLit(true)}><Sun size={16} />{ar ? 'مع ضوء' : 'Light on'}</button><button aria-pressed={!lit} onClick={() => setLit(false)}><Moon size={16} />{ar ? 'بدون ضوء' : 'Light off'}</button></div><span>{ar ? 'محاكاة ثلاثية الأبعاد' : '3D material & light simulation'}</span></div>
       </div><aside className="studio-options"><p className="eyebrow">{ar ? 'صمّم ذكراك' : 'MAKE IT PERSONAL'}</p><input ref={upload} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={e => choose(e.target.files?.[0])} /><button className="upload-button" onClick={() => upload.current?.click()} disabled={busy}><Upload size={18} />{busy ? (ar ? 'جارٍ تجهيز الصورة…' : 'Preparing your photo…') : photo ? (ar ? 'تغيير الصورة' : 'Change photograph') : (ar ? 'رفع صورة' : 'Upload photograph')}</button><p className="fine-print">JPG, PNG, WebP · {ar ? 'حتى ١٠ ميغابايت. تبقى الصورة في هذا المتصفح.' : 'Up to 10 MB. Your photo stays in this browser.'}</p>
         {photo && <label className="range-label">{ar ? 'تكبير الصورة' : 'Photo zoom'}<span>{zoom.toFixed(1)}×</span><input type="range" min="1" max="2" step=".1" value={zoom} onChange={e => setZoom(+e.target.value)} /></label>}
         <fieldset className="option-field"><legend>{ar ? 'الحجم' : 'Dimensions'}</legend><div className="size-options">{lithoSizes.map((option, i) => <button key={option.id} aria-pressed={size === i} onClick={() => setSize(i)}><span dir="ltr">{option.label}</span><span>{money(option.price, lang)}</span></button>)}</div></fieldset>

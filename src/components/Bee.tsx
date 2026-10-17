@@ -1,13 +1,34 @@
 import { useEffect, useState } from 'react'
-import { motion, useReducedMotion, useSpring } from 'motion/react'
+import { motion, useAnimate, useReducedMotion, useSpring } from 'motion/react'
 import { asset } from '@/lib/catalog'
+let hasFlownThisPage = false
 export function Bee() {
   const reduced = useReducedMotion()
-  const [first] = useState(() => { try { return sessionStorage.getItem('elike-bee-arrived') !== 'yes' } catch { return true } })
-  const [arrived, setArrived] = useState(!first)
+  const [arrived, setArrived] = useState(hasFlownThisPage || Boolean(reduced))
+  const [scope, animate] = useAnimate<HTMLDivElement>()
   const x = useSpring(0, { stiffness: 80, damping: 20 })
   const y = useSpring(0, { stiffness: 80, damping: 20 })
   const rotate = useSpring(0, { stiffness: 80, damping: 20 })
+  useEffect(() => {
+    if (reduced || arrived || !scope.current) return
+    const node = scope.current
+    const home = node.parentElement!.getBoundingClientRect()
+    const rect = { left: home.left + (home.width - node.offsetWidth) / 2, top: home.top + (home.height - node.offsetHeight) / 2, width: node.offsetWidth, height: node.offsetHeight }
+    const mobile = innerWidth < 768
+    const limitX = Math.max(30, innerWidth - rect.width - 30)
+    const limitY = Math.max(80, innerHeight - rect.height - 30)
+    const points = mobile
+      ? [[30, rect.top + 65], [innerWidth * .45, rect.top + 145], [limitX - 12, rect.top + 52], [rect.left, rect.top]]
+      : [[45, rect.top - 75], [innerWidth * .34, rect.top + 35], [innerWidth * .62, rect.top - 105], [rect.left, rect.top]]
+    let cancelled = false
+    const flight = animate(node, {
+      x: points.map((p, i) => i === 3 ? 0 : Math.max(25, Math.min(limitX, p[0])) - rect.left),
+      y: points.map((p, i) => i === 3 ? 0 : Math.max(80, Math.min(limitY, p[1])) - rect.top),
+      rotate: [-14, 12, -9, 0], opacity: [1, 1, 1, 1],
+    }, { duration: 2, times: [0, .32, .65, 1], ease: 'easeInOut' })
+    flight.then(() => { if (!cancelled) { hasFlownThisPage = true; setArrived(true) } })
+    return () => { cancelled = true; flight.stop() }
+  }, [animate, arrived, reduced, scope])
   useEffect(() => {
     if (reduced || !arrived) return
     const move = (event: PointerEvent) => {
@@ -20,7 +41,7 @@ export function Bee() {
     window.addEventListener('pointermove', move); document.addEventListener('pointerleave', reset)
     return () => { window.removeEventListener('pointermove', move); document.removeEventListener('pointerleave', reset) }
   }, [arrived, reduced, x, y, rotate])
-  return <motion.div className="bee-arrival" data-arrived={arrived || reduced} initial={reduced || !first ? false : { x: -180, y: -100, rotate: -30, opacity: 0 }} animate={{ x: 0, y: 0, rotate: 0, opacity: 1 }} transition={{ duration: first ? 1.35 : 0, ease: [.22, 1, .36, 1] }} onAnimationComplete={() => { setArrived(true); try { sessionStorage.setItem('elike-bee-arrived', 'yes') } catch { /* private browsing */ } }}>
-    <motion.img className="hero-bee" src={asset('brand/elike-bee.svg')} height="105" alt="" style={reduced ? {} : { x, y, rotate }} />
+  return <motion.div ref={scope} className="bee-arrival" data-arrived={arrived || Boolean(reduced)} data-phase={arrived || reduced ? 'landed' : 'flying'} style={{ opacity: arrived || reduced ? 1 : 0 }}>
+    <motion.img className="hero-bee" src={asset('brand/elike-bee.svg')} height="105" alt="" style={{ aspectRatio: '114 / 67', ...(reduced ? {} : { x, y, rotate }) }} />
   </motion.div>
 }

@@ -245,3 +245,28 @@
   .strip-navigation { display: flex; align-items: center; justify-content: center; gap: 15px; border-top: 1px solid var(--color-line); padding: 4px 10px; }
   .strip-navigation .text-button { font-size: 11px; }
 }
+@layer components {
+  .bee-orbit { transform: none; }
+  .bee-arrival { z-index: 30; pointer-events: none; }
+}
+@layer components {
+  .realistic-preview { display: block; padding: 0; min-height: 0; position: relative; background: #252420; }
+  .realistic-preview .scene-frame { width: 100%; max-width: none; filter: none; }
+  .realistic-preview .scene-frame canvas { width: 100%; height: 100%; border: 0; border-radius: 0; display: block; touch-action: pan-y; }
+  .litho-3d-viewer { position: relative; width: 100%; height: 570px; cursor: grab; touch-action: pan-y; }
+  .litho-3d-viewer:active { cursor: grabbing; }
+  .viewer-hint { position: absolute; bottom: 17px; inset-inline-start: 20px; font-size: 10px; color: #FDFDFB; background: #191816C9; padding: 8px 11px; border-radius: 3px; pointer-events: none; }
+  .realistic-preview .upload-example-cta { position: absolute; inset-inline-end: 18px; bottom: 15px; min-height: 44px; width: auto; max-width: calc(100% - 36px); padding: 11px 14px; display: flex; flex-direction: row; gap: 10px; border: 1px solid #8A867D; border-radius: 4px; color: #191816; background: #FDFDFB; }
+  .upload-example-cta > span { font-size: 11px; }
+  .viewer-fallback { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 20px; background: #252420; color: #FDFDFB; }
+  .viewer-fallback img { max-height: 75%; max-width: 75%; object-fit: contain; filter: grayscale(1); }
+  .viewer-fallback p { font-size: 12px; line-height: 1.7; }
+}
+@media (max-width: 767px) {
+  .litho-3d-viewer { height: 460px; }
+  .realistic-preview .upload-example-cta { bottom: 52px; inset-inline-end: 12px; }
+  .viewer-hint { inset-inline-start: 12px; bottom: 12px; }
+}
+@layer components {
+  .litho-3d-viewer:focus-visible::after { content: ''; position: absolute; inset: 4px; border: 2px solid #FDFDFB; outline: 2px solid #191816; pointer-events: none; z-index: 4; }
+}
