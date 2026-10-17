@@ -1,4 +1,8 @@
-# Connect accounts and payments
+# Connect real sign-in
+
+Current scope: checkout is a **preview-only page**, as requested. It has no payment or upload handler. Connecting Supabase enables accounts only; it cannot activate payments. The payment backend notes below are archived preparation for a future task, not steps needed now. A future real checkout needs its frontend payment handler restored and explicitly tested.
+
+## Current sign-in setup
 
 The public site runs on GitHub Pages. Accounts, private uploads, orders, and payment
 verification are prepared for Supabase; no Supabase project is connected yet.
@@ -64,7 +68,7 @@ front-end environment:
   as its invoice currency, not merely the displayed currency.
 - `CHECKOUT_ENABLED=true` only when ready for controlled sandbox tests.
 
-For sandbox tests set GitHub repository variable `VITE_CHECKOUT_ENABLED=true`, redeploy,
+For a future payment task, implement the frontend checkout integration first; a repository variable alone cannot enable it. Then redeploy,
 and verify the full flow using **test credentials and test payment cards only**:
 
 - One customer can read only their own orders and photos.
@@ -84,5 +88,5 @@ and verify the full flow using **test credentials and test payment cards only**:
 
 No provider account, sandbox transaction, Supabase migration, RLS integration test,
 email delivery, or live charge has been executed in this task. Those are outstanding
-external prerequisites, not passing test claims. Keep both checkout flags false until
-accepted. A provider other than MyFatoorah needs a matching server adapter and tests.
+external prerequisites, not passing test claims. Keep the server checkout flag false until
+accepted; the current frontend stays preview-only regardless. A provider other than MyFatoorah needs a matching server adapter and tests.

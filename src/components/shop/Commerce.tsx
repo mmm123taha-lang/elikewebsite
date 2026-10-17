@@ -5,8 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, ShieldCheck, Mail, LogOut, Package, LoaderCircle } from 'lucide-react'
 import { colors, money } from '@/lib/catalog'
 import type { CartItem, Language } from '@/lib/catalog'
-import { backend, checkoutEnabled } from '@/lib/backend'
-import { getAsset, readSaved, save } from '@/lib/persistence'
+import { backend } from '@/lib/backend'
 import { ProductImage } from './ProductImage'
 export function Cart({ lang, items, change }: { lang: Language; items: CartItem[]; change: (id: string, quantity: number) => void }) {
   const ar = lang === 'ar', reduced = useReducedMotion()
@@ -34,39 +33,11 @@ export function Account({ lang, session }: { lang: Language; session: Session | 
 }
 export function Checkout({ lang, items, session }: { lang: Language; items: CartItem[]; session: Session | null }) {
   const ar = lang === 'ar'
-  const [name, setName] = useState(''), [phone, setPhone] = useState(''), [consent, setConsent] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('')
+  const [name, setName] = useState(''), [phone, setPhone] = useState('')
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  async function pay(event: FormEvent) {
-    event.preventDefault(); setError('')
-    if (!backend || !checkoutEnabled || !session) return
-    setBusy(true)
-    try {
-      const lines = []
-      for (const item of items) {
-        let photoPath: string | undefined
-        if (item.assetId) {
-          const blob = await getAsset(item.assetId)
-          if (!blob) throw new Error(ar ? 'إحدى الصور غير موجودة. أعد رفعها قبل إتمام الطلب.' : 'A saved photo is missing. Please upload it again before checking out.')
-          photoPath = `${session.user.id}/${item.assetId}.jpg`
-          const uploaded = await backend.storage.from('customer-designs').upload(photoPath, blob, { contentType: 'image/jpeg', upsert: false })
-          if (uploaded.error && !['409', 'Duplicate'].includes(String(uploaded.error.statusCode))) throw new Error(ar ? 'تعذّر رفع الصورة بشكل آمن. حاول مجدداً.' : 'Your photo could not be uploaded securely. Please try again.')
-        }
-        lines.push({ productId: item.productId, quantity: item.quantity, color: item.color, config: item.config, photoPath })
-      }
-      const fingerprint = JSON.stringify({ lines, name: name.trim(), phone: phone.trim() })
-      const previous = readSaved<{ fingerprint: string; requestId: string } | null>('elike-checkout-attempt', null)
-      const requestId = previous?.fingerprint === fingerprint ? previous.requestId : crypto.randomUUID()
-      save('elike-checkout-attempt', { fingerprint, requestId })
-      const result = await backend.functions.invoke('create-checkout', { body: { requestId, expectedTotal: total, items: lines, customer: { name: name.trim(), phone: phone.trim() }, fulfilment: 'pickup' } })
-      if (result.error || !result.data?.url) throw new Error(ar ? 'الدفع غير متاح حالياً. لم يتم تأكيد أي طلب. حاول لاحقاً.' : 'Checkout is unavailable right now. No order has been confirmed. Please try again later.')
-      const destination = new URL(result.data.url)
-      if (destination.protocol !== 'https:') throw new Error('Invalid payment link')
-      window.location.assign(destination.href)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Checkout could not be started.') } finally { setBusy(false) }
-  }
-  return <section className="shop-page wrap"><div className="page-heading"><p className="eyebrow">{ar ? 'اللمسات الأخيرة' : 'THE FINAL LITTLE DETAILS'}</p><h1>{ar ? 'إتمام الطلب.' : 'Let’s make it yours.'}</h1></div>{!items.length ? <div className="empty-state"><p>{ar ? 'حقيبتك فارغة.' : 'Your bag is waiting for a little something.'}</p><a className="primary-button" href="#store">{ar ? 'إلى المتجر' : 'Explore the store'}</a></div> : <div className="cart-layout"><div className="checkout-form">{(!backend || !checkoutEnabled) && <div className="connection-notice"><strong>{ar ? 'الطلبات المدفوعة غير متاحة بعد.' : 'Online ordering is not open yet.'}</strong><p>{ar ? 'يجري ربط الحسابات وخدمة الدفع. حقيبتك محفوظة؛ لم يتم إرسال طلب أو خصم أي مبلغ.' : 'Accounts and hosted payments are being connected. Your bag is saved; no order has been submitted and no payment has been taken.'}</p></div>}{!session && <div className="checkout-signin"><Mail size={22} /><div><h2>{ar ? 'حسابك أولاً' : 'A home for your order'}</h2><p>{ar ? 'سجّل الدخول لتتبع طلبك وحفظ تصاميمك بأمان.' : 'Sign in to keep your order and designs safely in one place.'}</p><a className="text-button" href="#account">{ar ? 'تسجيل الدخول' : 'Sign in or create an account'}<ArrowRight size={15} /></a></div></div>}
-      <form onSubmit={pay}><h2>{ar ? 'تفاصيل الاستلام' : 'Pickup details'}</h2><label>{ar ? 'الاسم الكامل' : 'Full name'}<input required maxLength={100} autoComplete="name" value={name} onChange={e => setName(e.target.value)} /></label><label>{ar ? 'رقم الهاتف في قطر' : 'Qatar phone number'}<input type="tel" dir="ltr" required autoComplete="tel" placeholder="+974 1234 5678" pattern="(?:\+974[\s\-]*)?(?:[0-9][\s\-]*){8}" maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} /></label><div className="pickup-note"><Package size={20} /><p>{ar ? 'استلام من الورشة في قطر. يتحدد الوقت والموقع بعد قبول الطلب؛ لا توجد رسوم توصيل في هذه المعاينة.' : 'Workshop pickup in Qatar. Pickup time and location are arranged after order acceptance. This preview does not include delivery.'}</p></div><label className="checkbox-option"><input type="checkbox" required checked={consent} onChange={e => setConsent(e.target.checked)} /><span>{ar ? 'أملك حق استخدام الصور والتصاميم المرفقة وأوافق على رفعها لإتمام الطلب.' : 'I have permission to use my uploaded images and designs, and agree to upload them for this order.'}</span></label><button className="primary-button full-width" disabled={busy || !session || !backend || !checkoutEnabled || !consent}>{busy ? <LoaderCircle className="spin" size={18} /> : <ShieldCheck size={18} />}{busy ? (ar ? 'جارٍ تجهيز الدفع…' : 'Preparing secure checkout…') : (ar ? 'المتابعة للدفع الآمن' : 'Continue to secure payment')}</button><p className="fine-print">{ar ? 'عند تفعيل الخدمة ستُدخل تفاصيل البطاقة لدى مزوّد الدفع، وليس على هذا الموقع.' : 'When connected, card details are entered on the payment provider’s secure page, never on this website.'}</p>{error && <p className="form-message error" role="alert">{error}</p>}</form>
-      </div><aside className="order-summary"><p className="eyebrow">{ar ? 'ملخص الطلب' : 'YOUR ORDER'}</p>{items.map(item => <div className="summary-line" key={item.id}><span>{item.quantity} × {ar ? item.ar : item.name}</span><span>{money(item.price * item.quantity, lang)}</span></div>)}<div className="summary-line"><span>{ar ? 'الاستلام' : 'Workshop pickup'}</span><span>{money(0, lang)}</span></div><div className="summary-line total-line"><span>{ar ? 'المجموع التقديري' : 'Estimated total'}</span><strong>{money(total, lang)}</strong></div><p className="fine-print">{ar ? 'يُحسب المبلغ النهائي في الخادم وفق الأسعار المعتمدة قبل الدفع.' : 'The server calculates the final amount from the approved catalogue before payment.'}</p><a className="text-button" href="#cart">{ar ? 'تعديل الحقيبة' : 'Edit your bag'}</a></aside></div>}</section>
+  return <section className="shop-page wrap"><div className="page-heading"><p className="eyebrow">{ar ? 'اللمسات الأخيرة' : 'THE FINAL LITTLE DETAILS'}</p><h1>{ar ? 'إتمام الطلب.' : 'Let’s make it yours.'}</h1></div>{!items.length ? <div className="empty-state"><p>{ar ? 'حقيبتك فارغة.' : 'Your bag is waiting for a little something.'}</p><a className="primary-button" href="#store">{ar ? 'إلى المتجر' : 'Explore the store'}</a></div> : <div className="cart-layout"><div className="checkout-form"><div className="connection-notice"><strong>{ar ? 'معاينة صفحة إتمام الطلب فقط.' : 'Checkout preview only.'}</strong><p>{ar ? 'الدفع وإرسال الطلبات غير مفعّلين. حقيبتك محفوظة، ولا تُرسل تفاصيل هذه الصفحة أو تُحفظ.' : 'Payments and order submission are not enabled. Your bag is saved; details entered on this page are not sent or saved.'}</p></div>{!session && <div className="checkout-signin"><Mail size={22} /><div><h2>{ar ? 'حسابك أولاً' : 'A home for your order'}</h2><p>{ar ? 'سجّل الدخول لتتبع طلبك وحفظ تصاميمك بأمان.' : 'Sign in to keep your order and designs safely in one place.'}</p><a className="text-button" href="#account">{ar ? 'تسجيل الدخول' : 'Sign in or create an account'}<ArrowRight size={15} /></a></div></div>}
+      <form onSubmit={event => event.preventDefault()}><h2>{ar ? 'تفاصيل الاستلام' : 'Pickup details'}</h2><label>{ar ? 'الاسم الكامل' : 'Full name'}<input required maxLength={100} autoComplete="name" value={name} onChange={e => setName(e.target.value)} /></label><label>{ar ? 'رقم الهاتف في قطر' : 'Qatar phone number'}<input type="tel" dir="ltr" required autoComplete="tel" placeholder="+974 1234 5678" pattern="(?:\+974[\s\-]*)?(?:[0-9][\s\-]*){8}" maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} /></label><div className="pickup-note"><Package size={20} /><p>{ar ? 'استلام من الورشة في قطر. يتحدد الوقت والموقع بعد قبول الطلب؛ لا توجد رسوم توصيل في هذه المعاينة.' : 'Workshop pickup in Qatar. Pickup time and location are arranged after order acceptance. This preview does not include delivery.'}</p></div><button type="button" className="primary-button full-width" disabled><ShieldCheck size={18} />{ar ? 'الدفع غير مفعّل بعد' : 'Payment coming soon'}</button><p className="fine-print">{ar ? 'هذه الصفحة للمعاينة فقط. لن يتم إرسال طلب أو خصم أي مبلغ.' : 'This page is a preview. No order is placed and no payment is taken.'}</p></form>
+      </div><aside className="order-summary"><p className="eyebrow">{ar ? 'ملخص الطلب' : 'YOUR ORDER'}</p>{items.map(item => <div className="summary-line" key={item.id}><span>{item.quantity} × {ar ? item.ar : item.name}</span><span>{money(item.price * item.quantity, lang)}</span></div>)}<div className="summary-line"><span>{ar ? 'الاستلام' : 'Workshop pickup'}</span><span>{money(0, lang)}</span></div><div className="summary-line total-line"><span>{ar ? 'المجموع التقديري' : 'Estimated total'}</span><strong>{money(total, lang)}</strong></div><p className="fine-print">{ar ? 'المجموع للمعاينة فقط. لا يتم إرسال طلب.' : 'Estimated total for this preview. No order is submitted.'}</p><a className="text-button" href="#cart">{ar ? 'تعديل الحقيبة' : 'Edit your bag'}</a></aside></div>}</section>
 }
 export function Orders({ lang, session }: { lang: Language; session: Session | null }) {
   const ar = lang === 'ar'

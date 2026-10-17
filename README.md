@@ -25,18 +25,17 @@ with `npx playwright install chromium` on machines without it. The test config u
 - Henna editor: 15 × 3 cm strip; 12 motifs; placement, dragging, size, rotation,
   duplication, undo, keyboard movement, saved draft and SVG design download.
 - Lithophane: nine-second illustrated MP4 intro with skip, photo upload, lit/unlit
-  preview, size/shape/zoom/LED options and proposed prices. Photos stay in IndexedDB
-  until checkout. This is a preview, not an STL/mesh generator.
+  preview, size/shape/zoom/LED options and proposed prices. Photos stay in IndexedDB on this device;
+  the preview checkout never uploads them. This is a preview, not an STL/mesh generator.
 - Saved cart including per-colour quantities and custom designs; review/checkout screen.
 - Supabase email magic-link sign-in and order-history integration prepared. Secure
   order pricing, private photo storage, and an optional hosted-payment server adapter.
 
 ## What needs connection
 
-Accounts and payments are not activated: no Supabase project or payment provider has
+Sign-in is not activated: no Supabase project has been connected. Checkout is deliberately a preview-only page, with no payment or order submission handler. No payment provider has
 been supplied. The owner hasn't selected a provider. No fake account or simulated
-payment is shown. Follow [backend setup](docs/backend-setup.md) to connect services,
-set production email, approve catalogue data, and complete sandbox tests. Proposed
+payment is shown. Follow [backend setup](docs/backend-setup.md) to connect accounts and production email. The payment adapter is retained for a future task only; real payment activation would require a separate frontend implementation and sandbox tests. Proposed
 non-keychain prices are labelled and rejected by the server until approved.
 
 Copy `.env.example` to `.env.local` for local public configuration. GitHub Pages builds

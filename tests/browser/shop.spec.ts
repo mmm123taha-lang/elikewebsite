@@ -89,9 +89,15 @@ test('unconnected accounts and payments never pretend to sign in or accept a pay
   await expect(page.locator('.connection-notice')).toContainText('Sign-in is not active yet')
   await page.goto('/#store'); await page.locator('.product-card').first().getByRole('button', { name: 'Add to bag', exact: true }).click()
   await page.goto('/#checkout')
-  await expect(page.locator('.connection-notice')).toContainText('Online ordering is not open yet')
-  await expect(page.getByRole('button', { name: 'Continue to secure payment' })).toBeDisabled()
+  await expect(page.locator('.connection-notice')).toContainText('Checkout preview only')
+  await expect(page.getByRole('button', { name: 'Payment coming soon' })).toBeDisabled()
   await expect(page.locator('input[autocomplete=cc-number]')).toHaveCount(0)
+  const paymentRequests: string[] = []; page.on('request', request => { if (/create-checkout|storage\/v1/.test(request.url())) paymentRequests.push(request.url()) })
+  await page.getByLabel('Full name', { exact: true }).fill('Preview Customer')
+  await page.getByLabel('Qatar phone number', { exact: true }).fill('+974 12345678')
+  await page.locator('.checkout-form form').evaluate((form: HTMLFormElement) => form.requestSubmit())
+  await expect(page.locator('.cart-layout')).toBeVisible()
+  expect(paymentRequests).toEqual([])
 })
 for (const width of [360, 390, 430, 768, 1024, 1440]) for (const language of ['en', 'ar']) {
   test(`all shop screens fit ${width}px in ${language}`, async ({ page }) => {

@@ -56,3 +56,10 @@ illustrated products, background rules and disabled controls are not body text.
 | Ink / sage | 5.85:1 | Pass |
 
 Gold on canvas is 1.78:1 and is used only for decorative artwork, not text. Decorative dividers are likewise exempt from text/control contrast thresholds.
+
+## Preview-only checkout update
+
+The owner requested payment remain a page preview. The frontend payment/upload
+handler and activation flag were removed. Build, lint, and the focused account/checkout
+browser check passed, including form submission that sends no payment/upload request.
+Sign-in remains inactive until a Supabase project is connected.
